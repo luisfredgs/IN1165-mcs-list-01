@@ -4,6 +4,7 @@ from sklearn.ensemble import BaggingClassifier
 from sklearn.ensemble import AdaBoostClassifier
 from tqdm import tqdm
 from sklearn.linear_model import Perceptron # base classifier
+from sklearn.linear_model import SGDClassifier # base classifier
 from sklearn.model_selection import KFold
 import pandas as pd
 import utils
@@ -17,7 +18,7 @@ seed = 100000
 n_estimators = 10
 pool_length = [10, 20, 30, 40, 50, 60, 80, 90, 100]
 np.random.seed(seed)
-base_learner = Perceptron()
+base_learner = SGDClassifier(loss="perceptron", eta0=1.e-17,max_iter=1, learning_rate="constant", penalty=None)
 pool_type = 'adaboost'
 
 print("Dataset size: %d" % X.shape[0])
