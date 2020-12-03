@@ -32,8 +32,8 @@ class RandomOracleModel(object):
         
         self.classifier1 = None
         self.classifier2 = None
-        self.inst1 = None 
-        self.inst2 = None
+        self.instance_1 = None 
+        self.instance_2 = None
 
         perceptron = SGDClassifier(loss="perceptron", eta0=1.e-17,max_iter=1, 
                                 learning_rate="constant", penalty=None)
@@ -72,8 +72,8 @@ class RandomOracleModel(object):
         while i2==i1:
             i2 = np.random.randint(len_train)
 
-        self.inst1 = inst1 = X[i1]
-        self.inst2 = inst2 = X[i2]
+        self.instance_1 = instance_1 = X[i1]
+        self.instance_2 = instance_2 = X[i2]
 
         X1 = [] 
         Y1 = []
@@ -81,7 +81,7 @@ class RandomOracleModel(object):
         Y2 = []
         
         for x, y in zip(X, Y):
-            if self.distance(x, inst1) < self.distance(x, inst2):
+            if self.distance(x, instance_1) < self.distance(x, instance_2):
                 X1.append(x)
                 Y1.append(y)
             else:
@@ -102,9 +102,9 @@ class RandomOracleModel(object):
         returns the prediction given by the selected classifier."""
 
         assert self.classifier1 is not None and self.classifier2 is not None
-        assert self.inst1 is not None and self.inst2 is not None
+        assert self.instance_1 is not None and self.instance_2 is not None
         
-        if self.distance(x, self.inst1) < self.distance(x, self.inst2):
+        if self.distance(x, self.instance_1) < self.distance(x, self.instance_2):
             return self.classifier1.predict([x])[0]
         else:
             return self.classifier2.predict([x])[0]
@@ -112,7 +112,7 @@ class RandomOracleModel(object):
     def score(self, x_test, y_test):
 
         assert self.classifier1 is not None and self.classifier2 is not None
-        assert self.inst1 is not None and self.inst2 is not None
+        assert self.instance_1 is not None and self.instance_2 is not None
 
         preds = []
 
