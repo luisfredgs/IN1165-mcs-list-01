@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
 from sklearn.metrics import classification_report, accuracy_score
-from sklearn.linear_model import Perceptron, SGDClassifier
+from sklearn.ensemble import BaseEnsemble
+from sklearn.linear_model import SGDClassifier
 
-class RandomOracleModel(object):
+class RandomOracleModel(BaseEnsemble):
     
     """ In the Random Oracle ensemble method, each base classifier is a mini-ensemble of two classifiers 
     and a randomly generated oracle that selects one of the two classifiers.
@@ -15,7 +16,7 @@ class RandomOracleModel(object):
     Each remaining training object is assigned to the subspace of the selected training object for 
     which is closer.
     
-    This code is adapted from an implementation of "Random Oracle Ensembles for Imbalanced Data"
+    This code is inspired on the implementation of "Random Oracle Ensembles for Imbalanced Data"
     avaliable in: https://github.com/ndinhtuan/oracle_ensemble
 
     References
@@ -28,17 +29,24 @@ class RandomOracleModel(object):
     
     """
 
-    def __init__(self):
-        
+    def __init__(self,
+                 base_estimator=SGDClassifier,
+                 n_estimators=1,
+                 correct_classif_label = []
+                 ):
+
+        super(RandomOracleModel, self).__init__(base_estimator=SGDClassifier, n_estimators=1)
+
         self.classifier1 = None
         self.classifier2 = None
         self.instance_1 = None 
         self.instance_2 = None
+        
+        self.classifier1 = base_estimator
+        self.classifier2 = base_estimator
 
-        perceptron = SGDClassifier(loss="perceptron", eta0=1.e-17,max_iter=1, 
-                                learning_rate="constant", penalty=None)
-        self.classifier1 = perceptron
-        self.classifier2 = perceptron
+        # Pool initially empty
+        self.estimators_ = []       
     
 
     def distance(self, x1, x2):
@@ -75,34 +83,22 @@ class RandomOracleModel(object):
         self.instance_1 = instance_1 = X[i1]
         self.instance_2 = instance_2 = X[i2]
 
-        X1 = [] 
-        Y1 = []
-        X2 = [] 
-        Y2 = []
         
-        for x, y in zip(X, Y):
-            if self.distance(x, instance_1) < self.distance(x, instance_2):
-                X1.append(x)
-                Y1.append(y)
-            else:
-                X2.append(x) 
-                Y2.append(y)
+        X1 = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_1) < self.distance(x, instance_2)])
+        Y1 = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_1) < self.distance(x, instance_2)])
 
-        X1 = np.array(X1)
-        Y1 = np.array(Y1)
-        X2 = np.array(X2)
-        Y2 = np.array(Y2)
+        X2 = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_1) > self.distance(x, instance_2)])
+        Y2 = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_1) > self.distance(x, instance_2)])
         
-
-        self.classifier1.fit(X1, Y1)
+        
+        self.classifier1.fit(X1, Y1)        
         self.classifier2.fit(X2, Y2)
+
+        return self.classifier1.fit(X1, Y1), self.classifier2.fit(X2, Y2), self.instance_1, self.instance_2
     
     def predict(self, x):
         """Use the Random Oracle to select one of the two classifiers and
         returns the prediction given by the selected classifier."""
-
-        assert self.classifier1 is not None and self.classifier2 is not None
-        assert self.instance_1 is not None and self.instance_2 is not None
         
         if self.distance(x, self.instance_1) < self.distance(x, self.instance_2):
             return self.classifier1.predict([x])[0]
@@ -110,9 +106,6 @@ class RandomOracleModel(object):
             return self.classifier2.predict([x])[0]
 
     def score(self, x_test, y_test):
-
-        assert self.classifier1 is not None and self.classifier2 is not None
-        assert self.instance_1 is not None and self.instance_2 is not None
 
         preds = []
 
