@@ -4,6 +4,7 @@ from sklearn.metrics import classification_report, accuracy_score
 from sklearn.ensemble import BaseEnsemble
 from sklearn.linear_model import SGDClassifier
 
+
 class RandomOracleModel(BaseEnsemble):
     
     """ In the Random Oracle ensemble method, each base classifier is a mini-ensemble of two classifiers 
@@ -15,9 +16,9 @@ class RandomOracleModel(BaseEnsemble):
     the points that are at the same distance  from the two training objects define the hyperplane. 
     Each remaining training object is assigned to the subspace of the selected training object for 
     which is closer.
-    
-    This code is inspired on the implementation of "Random Oracle Ensembles for Imbalanced Data"
-    avaliable in: https://github.com/ndinhtuan/oracle_ensemble
+
+    Thanks to @ndinhtuan <https://github.com/ndinhtuan> for the "Random Oracle Ensembles for Imbalanced Data"
+    implementation I used as base, which is avaliable in: https://github.com/ndinhtuan/oracle_ensemble
 
     References
     ----------
@@ -32,7 +33,6 @@ class RandomOracleModel(BaseEnsemble):
     def __init__(self,
                  base_estimator=SGDClassifier,
                  n_estimators=1,
-                 correct_classif_label = []
                  ):
 
         super(RandomOracleModel, self).__init__(base_estimator=SGDClassifier, n_estimators=1)
@@ -47,9 +47,9 @@ class RandomOracleModel(BaseEnsemble):
 
         # Pool initially empty
         self.estimators_ = []       
-    
 
-    def distance(self, x1, x2):
+    @staticmethod
+    def distance(x1, x2):
         """ The distances are calculated according to the Euclidean distance.
         The following call works because the Euclidean distance is equivalent 
         to the l2 norm.
@@ -59,7 +59,6 @@ class RandomOracleModel(BaseEnsemble):
         """
 
         return np.linalg.norm(np.array(x1)-np.array(x2))
-
 
     def fit(self, X, Y):
         """Split the training data in two subsets. 
@@ -73,45 +72,47 @@ class RandomOracleModel(BaseEnsemble):
             class labels of each example in X.
 
         """
-        len_train = len(X)
-        i1 = np.random.randint(len_train)
-        i2 = np.random.randint(len_train)
-
-        while i2==i1:
+        for i in range(0, 4):
+            len_train = len(X)
+            i1 = np.random.randint(len_train)
             i2 = np.random.randint(len_train)
 
-        self.instance_1 = instance_1 = X[i1]
-        self.instance_2 = instance_2 = X[i2]
+            while i2 == i1:
+                i2 = np.random.randint(len_train)
 
-        
-        X1 = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_1) < self.distance(x, instance_2)])
-        Y1 = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_1) < self.distance(x, instance_2)])
+            self.instance_1 = instance_1 = X[i1]
+            self.instance_2 = instance_2 = X[i2]
 
-        X2 = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_1) > self.distance(x, instance_2)])
-        Y2 = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_1) > self.distance(x, instance_2)])
-        
-        
-        self.classifier1.fit(X1, Y1)        
-        self.classifier2.fit(X2, Y2)
+            X1 = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_1) < self.distance(x, instance_2)])
+            Y1 = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_1) < self.distance(x, instance_2)])
 
-        return self.classifier1.fit(X1, Y1), self.classifier2.fit(X2, Y2), self.instance_1, self.instance_2
+            X2 = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_1) > self.distance(x, instance_2)])
+            Y2 = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_1) > self.distance(x, instance_2)])
+
+            self.classifier1.fit(X1, Y1)
+            self.classifier2.fit(X2, Y2)
+
+            self.estimators_.append((self.classifier1, self.classifier2, self.instance_1, self.instance_2))
+
+        return self
     
     def predict(self, x):
         """Use the Random Oracle to select one of the two classifiers and
         returns the prediction given by the selected classifier."""
-        
-        if self.distance(x, self.instance_1) < self.distance(x, self.instance_2):
-            return self.classifier1.predict([x])[0]
+
+        classifier1, classifier2, instance_1, instance_2 = self.estimators_[0]
+
+        if self.distance(x, instance_1) < self.distance(x, instance_2):
+            return classifier1.predict([x])[0]
         else:
-            return self.classifier2.predict([x])[0]
+            return classifier2.predict([x])[0]
 
     def score(self, x_test, y_test):
-
         preds = []
 
         for x in x_test:
             preds.append(self.predict(x)) 
 
         preds = np.array(preds)
-        
+
         return accuracy_score(y_test, preds)
