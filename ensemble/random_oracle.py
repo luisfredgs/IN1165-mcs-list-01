@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.metrics import classification_report, accuracy_score
 from sklearn.ensemble import BaseEnsemble
 from sklearn.linear_model import SGDClassifier
-
+from scipy import stats
 
 class RandomOracleModel(BaseEnsemble):
     
@@ -32,18 +32,20 @@ class RandomOracleModel(BaseEnsemble):
 
     def __init__(self,
                  base_estimator=SGDClassifier,
-                 n_estimators=1,
+                 n_estimators=50,
                  ):
 
         super(RandomOracleModel, self).__init__(base_estimator=SGDClassifier, n_estimators=1)
 
-        self.classifier1 = None
-        self.classifier2 = None
-        self.instance_1 = None 
-        self.instance_2 = None
+        self.classifier_left = None
+        self.classifier_right = None
+        self.instance_left = None 
+        self.instance_right = None
         
-        self.classifier1 = base_estimator
-        self.classifier2 = base_estimator
+        self.classifier_left = base_estimator
+        self.classifier_right = base_estimator
+
+        self.L = n_estimators
 
         # Pool initially empty
         self.estimators_ = []       
@@ -72,7 +74,8 @@ class RandomOracleModel(BaseEnsemble):
             class labels of each example in X.
 
         """
-        for i in range(0, 4):
+
+        for i in range(0, self.L):
             len_train = len(X)
             i1 = np.random.randint(len_train)
             i2 = np.random.randint(len_train)
@@ -80,39 +83,38 @@ class RandomOracleModel(BaseEnsemble):
             while i2 == i1:
                 i2 = np.random.randint(len_train)
 
-            self.instance_1 = instance_1 = X[i1]
-            self.instance_2 = instance_2 = X[i2]
+            self.instance_left = instance_left = X[i1]
+            self.instance_right = instance_right = X[i2]
 
-            X1 = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_1) < self.distance(x, instance_2)])
-            Y1 = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_1) < self.distance(x, instance_2)])
+            X_left = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_left) < self.distance(x, instance_right)])
+            y_left = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_left) < self.distance(x, instance_right)])
 
-            X2 = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_1) > self.distance(x, instance_2)])
-            Y2 = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_1) > self.distance(x, instance_2)])
+            X_right = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_left) > self.distance(x, instance_right)])
+            y_right = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_left) > self.distance(x, instance_right)])
+            
 
-            self.classifier1.fit(X1, Y1)
-            self.classifier2.fit(X2, Y2)
+            self.classifier_left.fit(X_left, y_left)
+            self.classifier_right.fit(X_right, y_right)
 
-            self.estimators_.append((self.classifier1, self.classifier2, self.instance_1, self.instance_2))
+            self.estimators_.append((self.classifier_left, self.classifier_right, self.instance_left, self.instance_right))
 
         return self
     
-    def predict(self, x):
+    def predict(self, x, estimator_index):
         """Use the Random Oracle to select one of the two classifiers and
         returns the prediction given by the selected classifier."""
+        
+        classifier_left, classifier_right, instance_left, instance_right = self.estimators_[estimator_index]
 
-        classifier1, classifier2, instance_1, instance_2 = self.estimators_[0]
-
-        if self.distance(x, instance_1) < self.distance(x, instance_2):
-            return classifier1.predict([x])[0]
+        if self.distance(x, instance_left) < self.distance(x, instance_right):
+            return classifier_left.predict([x])[0]
         else:
-            return classifier2.predict([x])[0]
+            return classifier_right.predict([x])[0]
+                
 
     def score(self, x_test, y_test):
-        preds = []
+        
+        cls_preds = [[self.predict(x, i) for x in x_test] for i in range(0, self.L)]                
+        preds, _ = stats.mode(cls_preds) # plurality vote labels
 
-        for x in x_test:
-            preds.append(self.predict(x)) 
-
-        preds = np.array(preds)
-
-        return accuracy_score(y_test, preds)
+        return accuracy_score(y_test, preds[0])

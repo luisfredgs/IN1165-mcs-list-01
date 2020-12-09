@@ -5,7 +5,7 @@ from sklearn.ensemble import AdaBoostClassifier
 from tqdm import tqdm
 from sklearn.linear_model import Perceptron # base classifier
 from sklearn.linear_model import SGDClassifier # base classifier
-from random_oracle import RandomOracleModel
+from ensemble.random_oracle import RandomOracleModel
 from sklearn.model_selection import KFold
 import pandas as pd
 import utils
@@ -14,10 +14,11 @@ import utils
 X, y = utils.data_digits()
 seed = 100000
 n_estimators = 10
-pool_length = [10, 20, 30, 40, 50, 60, 80, 90, 100]
+# pool_length = [10, 20, 30, 40, 50, 60, 80, 90, 100]
+pool_length = [10]
 np.random.seed(seed)
 base_learner = SGDClassifier(loss="perceptron", eta0=1.e-17,max_iter=200, learning_rate="constant", penalty=None)
-pool_type = 'random_oracle_model'
+pool_type = 'random_subspace'
 
 print("Dataset size: %d" % X.shape[0])
 
@@ -45,12 +46,16 @@ for l in tqdm(pool_length):
 
     pool_classifiers = pool_types[pool_type]
     scores = list()
+    
     for train_index, test_index in kf.split(X):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
-
+    
 
         pool_classifiers.fit(X_train, y_train)
+
+        print(pool_classifiers.estimators_features_)
+
         oracle = Oracle(pool_classifiers, random_state=seed)
         oracle.fit(X_train, y_train)
         
@@ -61,6 +66,7 @@ for l in tqdm(pool_length):
         else:
             score = oracle.score(X_test, y_test)
         scores.append(score)
+        
     
     results['oracle_accuracy'].append(np.mean(scores))
     results['oracle_std'].append(np.std(scores))

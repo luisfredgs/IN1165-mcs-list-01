@@ -4,7 +4,7 @@ import numpy as np
 from scipy.spatial.distance import pdist
 from scipy.spatial.distance import squareform
 from sklearn.utils.validation import check_X_y
-
+from collections import Counter
 from math import sqrt
 
 # From: https://github.com/marianaasouza/DESlib/blob/master/deslib/util/sgh.py
@@ -157,7 +157,8 @@ class SGH(BaseEnsemble):
     def _fit(self, X, y, included_samples):
         
         # Set base estimator as the Perceptron
-        self.base_estimator_ = SGDClassifier(loss="perceptron", eta0=1.e-17,max_iter=1, learning_rate="constant", penalty=None)
+        self.base_estimator_ = SGDClassifier(loss="perceptron", eta0=1.e-17, 
+                                max_iter=200, learning_rate="constant", penalty=None)
 
         # If there is no indication of which instances to include in the training, include all
         if included_samples.sum() == 0:
@@ -234,6 +235,10 @@ class SGH(BaseEnsemble):
             idx_curr_training_samples = np.where(curr_training_samples>0)
             eval_X = X[idx_curr_training_samples[0]]
             eval_y = y[idx_curr_training_samples[0]]
+            
+            #print(eval_X.shape[0], " instances. ", len(eval_y), "labels")
+            # print(eval_X, " ===> ", eval_y, " ", dict(Counter(eval_y)))
+            print("instances that weren't correctly classified: ", dict(Counter(eval_y)))
         
             # Evaluate generated classifier over eval_X
             out_curr_perc = self.estimators_[n_perceptrons].predict(eval_X)
@@ -254,5 +259,7 @@ class SGH(BaseEnsemble):
         self.n_estimators = n_perceptrons
         # Update classifier labels
         self.correct_classif_label = corr_classif_lab
+
+        print("n_perceptrons: ", n_perceptrons)
 
         return self
