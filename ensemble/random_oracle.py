@@ -35,7 +35,7 @@ class RandomOracleModel(BaseEnsemble):
                  n_estimators=50,
                  ):
 
-        super(RandomOracleModel, self).__init__(base_estimator=SGDClassifier, n_estimators=1)
+        super(RandomOracleModel, self).__init__(base_estimator=SGDClassifier, n_estimators=n_estimators)
 
         self.classifier_left = None
         self.classifier_right = None
