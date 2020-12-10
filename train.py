@@ -10,8 +10,18 @@ from sklearn.model_selection import KFold
 import pandas as pd
 import utils
 
+from sklearn.datasets import load_breast_cancer
 
-X, y = utils.data_digits()
+
+# X, y = utils.data_digits()
+
+data = load_breast_cancer()
+X = data.data
+y = data.target
+
+y = np.array([1.0 if l == 0 else 2.0 for l in y])
+
+
 seed = 100000
 n_estimators = 10
 pool_length = [10, 20, 30, 40, 50, 60, 80, 90, 100]

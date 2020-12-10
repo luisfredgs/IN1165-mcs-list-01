@@ -6,7 +6,6 @@ import pandas as pd
 
 def data_digits() -> Tuple[List, List]:
     X, y = load_digits(return_X_y=True)
-    print(y)
     return X,y
 
 def data_wine() -> Tuple[List, List]:

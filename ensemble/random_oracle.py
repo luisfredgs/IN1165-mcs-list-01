@@ -3,6 +3,8 @@ import numpy as np
 from sklearn.metrics import classification_report, accuracy_score
 from sklearn.ensemble import BaseEnsemble
 from sklearn.linear_model import SGDClassifier
+from sklearn.utils import shuffle
+
 from scipy import stats
 
 class RandomOracleModel(BaseEnsemble):
@@ -75,29 +77,39 @@ class RandomOracleModel(BaseEnsemble):
 
         """
 
+        X, Y = shuffle(X, Y)
+
+
         for i in range(0, self.L):
-            len_train = len(X)
-            i1 = np.random.randint(len_train)
-            i2 = np.random.randint(len_train)
+            while True:
+                try:
+                    len_train = len(X)
+                    i1 = np.random.randint(len_train)
+                    i2 = np.random.randint(len_train)
 
-            while i2 == i1:
-                i2 = np.random.randint(len_train)
+                    while i2 == i1:
+                        i2 = np.random.randint(len_train)
 
-            self.instance_left = instance_left = X[i1]
-            self.instance_right = instance_right = X[i2]
+                    self.instance_left = instance_left = X[i1]
+                    self.instance_right = instance_right = X[i2]
 
-            X_left = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_left) < self.distance(x, instance_right)])
-            y_left = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_left) < self.distance(x, instance_right)])
+                    X_left = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_left) < self.distance(x, instance_right)])
+                    y_left = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_left) < self.distance(x, instance_right)])
 
-            X_right = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_left) > self.distance(x, instance_right)])
-            y_right = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_left) > self.distance(x, instance_right)])
-            
+                    X_right = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_left) > self.distance(x, instance_right)])
+                    y_right = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_left) > self.distance(x, instance_right)])
+                    
+                    
 
-            self.classifier_left.fit(X_left, y_left)
-            self.classifier_right.fit(X_right, y_right)
+                    self.classifier_left.fit(X_left, y_left)
+                    self.classifier_right.fit(X_right, y_right)
 
-            self.estimators_.append((self.classifier_left, self.classifier_right, self.instance_left, self.instance_right))
+                    self.estimators_.append((self.classifier_left, self.classifier_right, self.instance_left, self.instance_right))
 
+                    break
+                except:
+                    continue
+                break
         return self
     
     def predict(self, x, estimator_index):
