@@ -4,8 +4,9 @@ from sklearn.metrics import classification_report, accuracy_score
 from sklearn.ensemble import BaseEnsemble
 from sklearn.linear_model import SGDClassifier
 from sklearn.utils import shuffle
-
+from scipy.spatial import distance
 from scipy import stats
+
 
 class RandomOracleModel(BaseEnsemble):
     
@@ -24,10 +25,10 @@ class RandomOracleModel(BaseEnsemble):
 
     References
     ----------
-    Kuncheva L.I. and J.J. Rodriguez, Classifier ensembles with a random linear oracle, 
+    [1] Kuncheva L.I. and J.J. Rodriguez, Classifier ensembles with a random linear oracle, 
     IEEE Transactions on Knowledge and Data Engineering, 19 (4), 500-508, 2007.
 
-    Rodríguez, Juan & Díez-Pastor, Jose-Francisco & García-Osorio, César. (2013). 
+    [2] Rodríguez, Juan & Díez-Pastor, Jose-Francisco & García-Osorio, César. (2013). 
     Random Oracle Ensembles for Imbalanced Data. 7872. 247-258. 10.1007/978-3-642-38067-9_22. 
     
     """
@@ -37,7 +38,7 @@ class RandomOracleModel(BaseEnsemble):
                  n_estimators=50,
                  ):
 
-        super(RandomOracleModel, self).__init__(base_estimator=SGDClassifier, n_estimators=n_estimators)
+        super(RandomOracleModel, self).__init__(base_estimator=base_estimator, n_estimators=n_estimators)
 
         self.classifier_left = None
         self.classifier_right = None
@@ -76,10 +77,7 @@ class RandomOracleModel(BaseEnsemble):
             class labels of each example in X.
 
         """
-
-        X, Y = shuffle(X, Y)
-
-
+        
         for i in range(0, self.L):
             while True:
                 try:
@@ -93,11 +91,20 @@ class RandomOracleModel(BaseEnsemble):
                     self.instance_left = instance_left = X[i1]
                     self.instance_right = instance_right = X[i2]
 
-                    X_left = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_left) < self.distance(x, instance_right)])
-                    y_left = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_left) < self.distance(x, instance_right)])
+                    """"the points that are at the same distance from
+                    instance_left and instance_right define the hyperplane. Each remaining 
+                    training object is assigned to the subspace of the selected training object 
+                    for which is closer [2]."""
 
-                    X_right = np.array([x for x, y in zip(X, Y) if self.distance(x, instance_left) > self.distance(x, instance_right)])
-                    y_right = np.array([y for x, y in zip(X, Y) if self.distance(x, instance_left) > self.distance(x, instance_right)])
+                    X_left = np.array([x for x, y in zip(X, Y) if \
+                        self.distance(x, instance_left) < self.distance(x, instance_right)])
+                    y_left = np.array([y for x, y in zip(X, Y) if \
+                        self.distance(x, instance_left) < self.distance(x, instance_right)])
+
+                    X_right = np.array([x for x, y in zip(X, Y) if \
+                        self.distance(x, instance_left) > self.distance(x, instance_right)])
+                    y_right = np.array([y for x, y in zip(X, Y) if \
+                        self.distance(x, instance_left) > self.distance(x, instance_right)])
                     
                     
 

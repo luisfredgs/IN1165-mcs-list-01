@@ -6,11 +6,11 @@ import pandas as pd
 
 def data_digits() -> Tuple[List, List]:
     X, y = load_digits(return_X_y=True)
-    return X,y
+    return 'digits', X, y
 
 def data_wine() -> Tuple[List, List]:
     X, y = load_wine(return_X_y=True)
-    return X,y
+    return 'wine', X, y
 
 def data_spam() -> Tuple[List, List]:
     """Dataset found on Kaggle website:
@@ -23,7 +23,7 @@ def data_spam() -> Tuple[List, List]:
     y = df['class'].values
     X = df.drop(['class'], axis=1).to_numpy()
     X = sc.fit_transform(X)
-    return X,y
+    return 'spam', X,y
 
 def data_creditcardfraud() -> Tuple[List, List]:
     """Dataset found on Kaggle website:
@@ -36,7 +36,7 @@ def data_creditcardfraud() -> Tuple[List, List]:
     X = df.drop(['Class'], axis=1).to_numpy()
     X = sc.fit_transform(X)
     y = df['Class'].values
-    return X,y
+    return 'credit_card_fraud', X, y
 
 
 def data_customer() -> Tuple[List, List]:
@@ -53,4 +53,4 @@ def data_customer() -> Tuple[List, List]:
     labelencoder = LabelEncoder()
     y = labelencoder.fit_transform(df['custcat'].values)
     print(y)
-    return X,y
+    return 'customer', X, y
