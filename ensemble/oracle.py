@@ -26,6 +26,8 @@ class Oracle:
     def __init__(self, pool_classifiers):
         self.pool_classifiers = pool_classifiers
         self.n_classifiers = len(self.pool_classifiers)
+    
+
 
     def predict(self, X, y):
         """Prepare the labels using the Oracle model.
@@ -69,3 +71,32 @@ class Oracle:
         from sklearn.metrics import accuracy_score
         accuracy = accuracy_score(y, self.predict(X, y))
         return accuracy
+
+    
+    def score_rs(self, X, y, feature_spaces):
+        """Prepare the labels using the Oracle model for Random Subspace.
+        Parameters
+        ----------
+        X : array of shape = [n_samples, n_features]
+            The data to be classified
+        y : array of shape = [n_samples]
+            Class labels of each sample in X.
+        Returns
+        -------
+        accuracy : float
+                   Classification accuracy of the Oracle model.
+        """
+        predicted_labels = -np.ones(y.size, dtype=int)        
+
+        for key, val in enumerate(self.pool_classifiers):
+            for sample_index, x in enumerate(X[feature_spaces[key]].T):
+                predicted = self.pool_classifiers[key].predict(x.reshape(1, -1))[0]
+                if predicted == y[sample_index]:
+                    predicted_labels[sample_index] = predicted
+                    break
+        
+        from sklearn.metrics import accuracy_score
+        accuracy = accuracy_score(y, predicted_labels)
+        return accuracy
+
+        
