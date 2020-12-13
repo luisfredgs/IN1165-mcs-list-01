@@ -1,8 +1,12 @@
-from sklearn.datasets import load_digits, load_wine
+from sklearn.datasets import load_digits, load_wine, load_breast_cancer
 from typing import List, Tuple, Any
 from sklearn.preprocessing import Normalizer, StandardScaler
 from sklearn.preprocessing import LabelEncoder
 import pandas as pd
+
+def data_breast_cancer() -> Tuple[List, List]:
+    X, y = load_breast_cancer(return_X_y=True)
+    return 'breast_cancer', X, y
 
 def data_digits() -> Tuple[List, List]:
     X, y = load_digits(return_X_y=True)
@@ -24,19 +28,6 @@ def data_spam() -> Tuple[List, List]:
     X = df.drop(['class'], axis=1).to_numpy()
     X = sc.fit_transform(X)
     return 'spam', X,y
-
-def data_creditcardfraud() -> Tuple[List, List]:
-    """Dataset found on Kaggle website:
-    https://www.kaggle.com/mlg-ulb/creditcardfraud"""
-
-    # normalizer = Normalizer(copy=False)
-    sc = StandardScaler()
-
-    df = pd.read_csv("./datasets/creditcard.csv")
-    X = df.drop(['Class'], axis=1).to_numpy()
-    X = sc.fit_transform(X)
-    y = df['Class'].values
-    return 'credit_card_fraud', X, y
 
 
 def data_customer() -> Tuple[List, List]:
