@@ -245,20 +245,13 @@ class SGH(BaseEnsemble):
             
             #print(eval_X.shape[0], " instances. ", len(eval_y), "labels")
             # print(eval_X, " ===> ", eval_y, " ", dict(Counter(eval_y)))
-            #             
+           
             misclassified = dict(Counter(eval_y))
-            #print("instances that weren't correctly classified: ", misclassified)
-
             it = dict(collections.OrderedDict(sorted(misclassified.items())))
 
-            if df.shape[0] > 0:
-                colum_alloc = [0] * df.shape[0]
-            else:
-                max_class_nb = eval_y[np.argmax(list(dict(Counter(eval_y))))]
-                alloc_size = max_class_nb+1
-                colum_alloc = [0] * alloc_size
+            colum_alloc = [0] * len(np.unique(y))
 
-            for i in range(0, len(list(it.values()))):
+            for i in range(len(list(it.values()))):                
                 colum_alloc[i] = list(it.values())[i]
 
             df[n_perceptrons] = colum_alloc
