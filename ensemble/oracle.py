@@ -5,7 +5,8 @@
 # License: BSD 3 clause
 
 import numpy as np
-
+from scipy import stats
+from sklearn.metrics import accuracy_score
 
 class Oracle:
     """ Abstract method that always selects the base classifier that predicts the correct label if such classifier
@@ -73,30 +74,29 @@ class Oracle:
         return accuracy
 
     
-    def score_rs(self, X, y, feature_spaces):
-        """Prepare the labels using the Oracle model for Random Subspace.
-        Parameters
-        ----------
-        X : array of shape = [n_samples, n_features]
-            The data to be classified
-        y : array of shape = [n_samples]
-            Class labels of each sample in X.
-        Returns
-        -------
-        accuracy : float
-                   Classification accuracy of the Oracle model.
-        """
-        predicted_labels = -np.ones(y.size, dtype=int)        
-
-        for key, val in enumerate(self.pool_classifiers):
-            for sample_index, x in enumerate(X[feature_spaces[key]].T):
-                predicted = self.pool_classifiers[key].predict(x.reshape(1, -1))[0]
-                if predicted == y[sample_index]:
-                    predicted_labels[sample_index] = predicted
-                    break
+    def score_random_subspace(self, X, y, feature_spaces):
         
-        from sklearn.metrics import accuracy_score
-        accuracy = accuracy_score(y, predicted_labels)
-        return accuracy
+        base_learners_preds = [self.pool_classifiers[key].predict(X[:, feature_spaces[key]]) \
+            for key, val in enumerate(self.pool_classifiers)]
+
+
+        pred_oracle = [ np.any((base_learners_preds[key] == y.reshape(-1,1)), axis=1) \
+            for key, val in enumerate(self.pool_classifiers) ]
+        
+        #print(np.mean(oracle))
+
+        # oracle_acc = []
+        # for i in range(len(y)):
+        #     oracle_hit = 0
+        #     for j in range(len(self.pool_classifiers)):                
+        #         if base_learners_preds[j][i] == y[i]:
+        #             oracle_hit = 1
+        #             break
+        #     oracle_acc.append(oracle_hit)
+
+        # #print(oracle_acc)
+        # return np.mean(oracle_acc)
+        
+        return np.mean(pred_oracle)
 
         

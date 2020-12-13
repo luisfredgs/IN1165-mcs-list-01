@@ -6,6 +6,8 @@ from scipy.spatial.distance import squareform
 from sklearn.utils.validation import check_X_y
 from collections import Counter
 from math import sqrt
+import collections
+import pandas as pd
 
 # From: https://github.com/marianaasouza/DESlib/blob/master/deslib/util/sgh.py
 
@@ -131,7 +133,9 @@ class SGH(BaseEnsemble):
                  n_estimators=1)
         
         # Pool initially empty
-        self.estimators_ = []       
+        self.estimators_ = []    
+
+        self.misclassified_data_frames = []   
 
     def fit(self, X, y, included_samples = np.array([])):
         """
@@ -208,6 +212,8 @@ class SGH(BaseEnsemble):
         # Centroids of each class
         centroids = np.zeros((n_classes,n_features),float)
 
+        df = pd.DataFrame()
+
         while curr_training_samples.sum() > 0 and n_err < max_err: # While there are still misclassified samples
 
             # Update centroids and obtain the classifier's coefficients
@@ -235,10 +241,30 @@ class SGH(BaseEnsemble):
             idx_curr_training_samples = np.where(curr_training_samples>0)
             eval_X = X[idx_curr_training_samples[0]]
             eval_y = y[idx_curr_training_samples[0]]
+
             
             #print(eval_X.shape[0], " instances. ", len(eval_y), "labels")
             # print(eval_X, " ===> ", eval_y, " ", dict(Counter(eval_y)))
-            print("instances that weren't correctly classified: ", dict(Counter(eval_y)))
+            #             
+            misclassified = dict(Counter(eval_y))
+            #print("instances that weren't correctly classified: ", misclassified)
+
+            it = dict(collections.OrderedDict(sorted(misclassified.items())))
+
+            if df.shape[0] > 0:
+                colum_alloc = [0] * df.shape[0]
+            else:
+                max_class_nb = eval_y[np.argmax(list(dict(Counter(eval_y))))]
+                alloc_size = max_class_nb+1
+                colum_alloc = [0] * alloc_size
+
+            for i in range(0, len(list(it.values()))):
+                colum_alloc[i] = list(it.values())[i]
+
+            df[n_perceptrons] = colum_alloc
+            if len(df.index) == 0:
+                df.index = it.keys()
+
         
             # Evaluate generated classifier over eval_X
             out_curr_perc = self.estimators_[n_perceptrons].predict(eval_X)
@@ -260,6 +286,8 @@ class SGH(BaseEnsemble):
         # Update classifier labels
         self.correct_classif_label = corr_classif_lab
 
-        print("n_perceptrons: ", n_perceptrons)
+        #print(df)
+
+        self.misclassified_data_frames.append(df.to_numpy())
 
         return self

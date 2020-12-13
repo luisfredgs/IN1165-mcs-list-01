@@ -52,5 +52,4 @@ def data_customer() -> Tuple[List, List]:
 
     labelencoder = LabelEncoder()
     y = labelencoder.fit_transform(df['custcat'].values)
-    print(y)
     return 'customer', X, y
