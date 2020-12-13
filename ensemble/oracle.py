@@ -83,19 +83,6 @@ class Oracle:
         pred_oracle = [ np.any((base_learners_preds[key] == y.reshape(-1,1)), axis=1) \
             for key, val in enumerate(self.pool_classifiers) ]
         
-        #print(np.mean(oracle))
-
-        # oracle_acc = []
-        # for i in range(len(y)):
-        #     oracle_hit = 0
-        #     for j in range(len(self.pool_classifiers)):                
-        #         if base_learners_preds[j][i] == y[i]:
-        #             oracle_hit = 1
-        #             break
-        #     oracle_acc.append(oracle_hit)
-
-        # #print(oracle_acc)
-        # return np.mean(oracle_acc)
         
         return np.mean(pred_oracle)
 
